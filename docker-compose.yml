@@ -1,0 +1,113 @@
+services:
+  router:
+    build: ./router
+    container_name: router
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      net.ipv4.ip_forward: 1
+    networks:
+      external_net:
+        ipv4_address: 10.0.1.254
+      dmz_net:
+        ipv4_address: 10.0.2.254
+    command: >
+      sh -c "ip route add 10.0.3.0/24 via 10.0.2.100 || true &&
+             tail -f /dev/null"
+
+  ids:
+    build: ./ids
+    container_name: ids
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    sysctls:
+      net.ipv4.ip_forward: 1
+    networks:
+      dmz_net:
+        ipv4_address: 10.0.2.100
+      protected_net:
+        ipv4_address: 10.0.3.100
+    volumes:
+      - ./ids/logs:/logs
+      - ./ids/pcaps:/pcaps
+    command: >
+      sh -c "ip route add 10.0.1.0/24 via 10.0.2.254 || true &&
+             tail -f /dev/null"
+
+  db:
+    image: postgres:15-alpine
+    container_name: shop_db
+    environment:
+      POSTGRES_USER: shopuser
+      POSTGRES_PASSWORD: shoppassword
+      POSTGRES_DB: shopdb
+    networks:
+      protected_net:
+        ipv4_address: 10.0.3.11
+    volumes:
+      - ./db-init:/docker-entrypoint-initdb.d
+    command: >
+      sh -c "ip route add 10.0.1.0/24 via 10.0.3.100 || true &&
+             docker-entrypoint.sh postgres"
+
+  cache:
+    image: redis:7-alpine
+    container_name: shop_cache
+    networks:
+      protected_net:
+        ipv4_address: 10.0.3.12
+    command: >
+      sh -c "ip route add 10.0.1.0/24 via 10.0.3.100 || true &&
+             redis-server"
+
+  flash:
+    build: ./flash-crowd
+    container_name: flash
+    cap_add:
+      - NET_ADMIN
+    networks:
+      external_net:
+        ipv4_address: 10.0.1.20
+    volumes:
+      - ./scenario-logs:/scripts/logs
+    environment:
+      TARGET_URL: "http://10.0.3.10/"
+      BASELINE_SECONDS: "120"
+      BASELINE_USERS: "10"
+      SURGE_SECONDS: "60"
+      SURGE_USERS: "100"
+      SPAWN_RATE: "10"
+      COOLDOWN_SECONDS: "60"
+    command: >
+      sh -c "ip route add 10.0.3.0/24 via 10.0.1.254 || true &&
+             /scripts/ramp.sh"
+
+  ddos:
+    build: ./DDoS
+    container_name: ddos
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      external_net:
+        ipv4_address: 10.0.1.30
+    command: >
+      sh -c "ip route add 10.0.3.0/24 via 10.0.1.254 || true &&
+             tail -f /dev/null"
+
+networks:
+  external_net:
+    ipam:
+      config:
+        - subnet: 10.0.1.0/24
+
+  dmz_net:
+    ipam:
+      config:
+        - subnet: 10.0.2.0/24
+
+  protected_net:
+    ipam:
+      config:
+        - subnet: 10.0.3.0/24
