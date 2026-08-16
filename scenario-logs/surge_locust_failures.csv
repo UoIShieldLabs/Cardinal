@@ -1,6 +1,1 @@
 Method,Name,Error,Occurrences,First Seen,Last Seen
-GET,//,"ConnectionRefusedError(111, 'Connection refused')",100,2026-08-11T04:54:35Z,2026-08-11T04:54:45Z
-GET,/product/[id],"ConnectionRefusedError(111, 'Connection refused')",1069,2026-08-11T04:54:35Z,2026-08-11T04:55:35Z
-POST,/checkout,"ConnectionRefusedError(111, 'Connection refused')",142,2026-08-11T04:54:35Z,2026-08-11T04:55:35Z
-GET,/static,"ConnectionRefusedError(111, 'Connection refused')",3207,2026-08-11T04:54:35Z,2026-08-11T04:55:35Z
-GET,/catalogue,"ConnectionRefusedError(111, 'Connection refused')",2570,2026-08-11T04:54:35Z,2026-08-11T04:55:35Z

@@ -31,10 +31,8 @@ services:
     volumes:
       - ./ids/logs:/logs
       - ./ids/pcaps:/pcaps
-    command: >
-      sh -c "ip route add 10.0.1.0/24 via 10.0.2.254 || true &&
-             tail -f /dev/null"
-
+    command: /entrypoint.sh
+      
   db:
     image: postgres:15-alpine
     container_name: shop_db
@@ -57,9 +55,7 @@ services:
     networks:
       protected_net:
         ipv4_address: 10.0.3.12
-    command: >
-      sh -c "ip route add 10.0.1.0/24 via 10.0.3.100 || true &&
-             redis-server"
+    command: /entrypoint.sh
 
   flash:
     build: ./flash-crowd
