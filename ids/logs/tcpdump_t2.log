@@ -1,0 +1,2 @@
+tcpdump: listening on eth1, link-type EN10MB (Ethernet), snapshot length 262144 bytes
+tcpdump: /pcaps/T2/T2_20260818_201809.pcap: Permission denied

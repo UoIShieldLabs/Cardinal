@@ -55,7 +55,6 @@ services:
     networks:
       protected_net:
         ipv4_address: 10.0.3.12
-    command: /entrypoint.sh
 
   flash:
     build: ./flash-crowd
