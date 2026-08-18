@@ -37,7 +37,8 @@ ENV PATH="/opt/zeek/bin:${PATH}"
 RUN mkdir -p \
     /logs \
     /logs/suricata \
-    /pcaps \
+    /pcaps/T1 \
+    /pcaps/T2 \
     /rules \
     /etc/suricata/rules
 
