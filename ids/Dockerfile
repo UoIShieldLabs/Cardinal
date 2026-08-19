@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     ca-certificates \
     && echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/ /' | tee /etc/apt/sources.list.d/security:zeek.list \
-    && curl -fsSL https://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/Release.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/security_zeek.gpg
+    && curl -fsSL http://download.opensuse.org/repositories/security:/zeek/xUbuntu_22.04/Release.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/security_zeek.gpg
 
 # Install IDS sensors and diagnostic tools
 RUN apt-get update && apt-get install -y \
@@ -37,7 +37,8 @@ ENV PATH="/opt/zeek/bin:${PATH}"
 RUN mkdir -p \
     /logs \
     /logs/suricata \
-    /pcaps \
+    /pcaps/T1 \
+    /pcaps/T2 \
     /rules \
     /etc/suricata/rules
 
