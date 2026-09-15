@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Directory — Cardinal{% endblock %}
+{% block crumbs %}<a href="/dashboard">Home</a> / <b>Directory</b>{% endblock %}
+{% block body %}
+<h1>Staff directory</h1>
+<p class="page-sub">Search colleagues by name, or browse everyone below.</p>
+
+<div class="card">
+  <form method="get" style="display:flex;gap:10px;align-items:center">
+    <input name="q" value="{{ enc(term, 'attr') }}" placeholder="Search by name…" style="flex:1">
+    <button class="btn" type="submit">Search</button>
+    {% if term %}<a class="btn ghost" href="/search">Clear</a>{% endif %}
+  </form>
+  <div class="tb-banner" style="margin-top:10px">
+    <span class="chip">SQL path <span class="k">{{ enc(impl, 'html') }}</span></span>
+    <span class="muted">override: <code>?impl=concat|param</code> · <code>?enc=raw|escape</code></span>
+  </div>
+</div>
+
+{% if term %}
+<div class="card">
+  <!-- Reflected-XSS sinks: the SAME search term rendered into four contexts.
+       In enc=raw mode the html-body sink is inert while the attribute, JS, and
+       URI sinks execute; in enc=escape mode all four are neutralised. -->
+  <!-- 1. HTML body / text node -->
+  <p style="margin-top:0">Results for “{{ enc(term, 'html') }}”</p>
+  <!-- 2. Attribute context -->
+  <input type="hidden" data-q="{{ enc(term, 'attr') }}">
+  <!-- 3. Inline JavaScript context -->
+  <script>
+    var lastQuery = "{{ enc(term, 'js') }}";
+    console.log("[cardinal] query:", lastQuery);
+  </script>
+  <!-- 4. URI context -->
+  <a class="muted" style="font-size:12.5px" href="/search?q={{ enc(term, 'uri') }}">permalink to this search</a>
+</div>
+{% endif %}
+
+{% if executed_sql %}
+<div class="card">
+  <div class="card-hd"><h2 style="font-size:14px">Query executed ({{ enc(impl, 'html') }})</h2></div>
+  <pre>{{ enc(executed_sql, 'html') }}</pre>
+</div>
+{% endif %}
+
+<div class="card" style="padding:0;overflow:hidden">
+  {% if results %}
+  <table>
+    <tr><th>Name</th><th>Title</th><th>Department</th><th>Contact</th><th></th></tr>
+    {% for r in results %}
+    <tr>
+      <td>
+        <div class="person">
+          <span class="avatar sm" style="background: {{ avatar_color(r.name) }}">{{ enc(initials(r.name), 'html') }}</span>
+          <strong>{{ enc(r.name, 'html') }}</strong>
+        </div>
+      </td>
+      <td>{{ enc(r.title, 'html') }}</td>
+      <td><span class="pill gray">{{ enc(r.department, 'html') }}</span></td>
+      <td class="muted">{{ enc(r.email, 'html') }}<br><small>{{ enc(r.phone, 'html') }} · {{ enc(r.location, 'html') }}</small></td>
+      <td><a class="btn ghost sm" href="/records/{{ r.id }}">Open</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <div class="empty">No matches{% if term %} for “{{ enc(term, 'html') }}”{% endif %}.</div>
+  {% endif %}
+</div>
+{% endblock %}

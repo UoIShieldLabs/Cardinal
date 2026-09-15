@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Settings — Cardinal{% endblock %}
+{% block crumbs %}<a href="/dashboard">Home</a> / <b>Settings</b>{% endblock %}
+{% block body %}
+<h1>Settings</h1>
+<p class="page-sub">Export your saved settings, or import a settings file from another session.</p>
+
+<div class="grid cols-2">
+  <div class="card">
+    <div class="card-hd"><h2>Export</h2></div>
+    <p class="muted">Download your current settings as a portable blob you can import later.</p>
+    <a class="btn ghost" href="/settings/export">⭳ Export my settings</a>
+  </div>
+
+  <div class="card">
+    <div class="card-hd"><h2>Import</h2></div>
+    <form method="post" action="/settings/import">
+      <div class="field">
+        <label>Settings blob (base64)</label>
+        <textarea name="blob" rows="4" placeholder="Paste an exported blob…"></textarea>
+      </div>
+      <button class="btn" type="submit">Import settings</button>
+    </form>
+    <p class="tb-banner" style="margin-bottom:0">
+      <span class="muted">deserialization mode override: <code>?deser=unsafe|safe</code></span>
+    </p>
+  </div>
+</div>
+
+{% if error %}<div class="flash err">{{ enc(error, 'html') }}</div>{% endif %}
+{% if result %}
+<div class="card">
+  <div class="card-hd"><h2>Reconstruction result</h2></div>
+  <pre>{{ enc(result | tojson, 'html') }}</pre>
+</div>
+{% endif %}
+{% endblock %}
