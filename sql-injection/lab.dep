@@ -1,0 +1,8 @@
+# Startup dependency order for Cardinal Phase 1.
+# Kathara starts a machine only after the machines it lists have started.
+# (This orders *boot*, not readiness — webapp.startup still waits for the DB
+# to accept connections before launching gunicorn.)
+webapp: db
+proxy: webapp
+locust: proxy
+attacker: proxy
