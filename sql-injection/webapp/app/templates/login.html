@@ -1,37 +1,18 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Sign in — Cardinal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/static/app.css">
-</head>
-<body>
-<div class="auth-wrap">
-  <div class="auth-card">
-    <div class="brand"><span class="logo">C</span> Cardinal Portal</div>
-    <p class="muted" style="text-align:center;margin-top:0">Sign in to the staff portal</p>
-
-    {% if error %}<div class="flash err">{{ enc(error, 'html') }}</div>{% endif %}
-
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+  <div class="card" style="max-width: 380px;">
+    <h1>Log in</h1>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
     <form method="post">
-      <div class="field">
-        <label>Username</label>
-        <input name="username" placeholder="e.g. alice" autocomplete="off" autofocus>
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input name="password" type="password" placeholder="••••••••" autocomplete="off">
-      </div>
-      <button class="btn" type="submit" style="width:100%;justify-content:center">Sign in</button>
+      <p><label>Username<br><input type="text" name="username" autofocus></label></p>
+      <p><label>Password<br><input type="password" name="password"></label></p>
+      <p><button type="submit">Sign in</button></p>
     </form>
-
-    <p class="muted" style="font-size:12.5px;margin-bottom:0">
-      Demo account <code>alice / alicepw</code>. SQL path:
-      <code>?impl=concat</code> (vulnerable) or <code>?impl=param</code> (safe).
-    </p>
-    {% if last_sql %}<pre style="margin-top:10px">{{ enc(last_sql, 'html') }}</pre>{% endif %}
+    <p class="muted">Directory users: alice / bob / carol.</p>
   </div>
-</div>
-</body>
-</html>
+  {% if executed_sql %}
+    <p class="muted" style="margin-top:14px;">Query executed:</p>
+    <div class="sql">{{ executed_sql }}</div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,18 @@
+#!/bin/bash
+# attacker — sqlmap/curl node on edge-net (eth0). Attacks are launched manually.
+ip addr add 172.30.0.30/24 dev eth0
+ip link set eth0 up
+
+# Kathara's file mount does not preserve the host executable bit, so make the
+# attack scripts runnable here (mirrors monitor.startup chmod'ing capture.sh).
+chmod +x /scripts/*.sh 2>/dev/null
+
+echo "[*] Attacker node ready."
+echo "[*] Available scripts:"
+echo "    /scripts/run_sqli.sh        — Automated sqlmap attack (search endpoint)"
+echo "    /scripts/manual_payloads.sh — Hand-crafted SQLi payloads via curl"
+echo ""
+echo "[*] Connect with: kathara connect attacker"
+
+# Keep the container running so you can attach and run attacks on demand.
+tail -f /dev/null

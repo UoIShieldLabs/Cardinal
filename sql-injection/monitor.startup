@@ -1,0 +1,10 @@
+#!/bin/bash
+# monitor — passive observer on edge-net (eth0) and app-net (eth1).
+# No default route, no forwarding: it only receives and records.
+ip addr add 172.30.0.99/24 dev eth0
+ip addr add 172.31.0.99/24 dev eth1
+ip link set eth0 up
+ip link set eth1 up
+
+chmod +x /scripts/capture.sh
+exec /scripts/capture.sh
