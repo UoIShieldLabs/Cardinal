@@ -1,0 +1,36 @@
+#!/bin/bash
+# db — MariaDB on app-net (eth0).
+#
+# Kathara does NOT run the official mariadb entrypoint, so we initialise the
+# data directory, start the server, and import the seed by hand. Each `kathara
+# lstart` is a fresh container (empty /var/lib/mysql), so this seeds cleanly
+# every time — `lclean` -> `lstart` reproduces a known state.
+ip addr add 172.31.0.30/24 dev eth0
+ip link set eth0 up
+
+DATADIR=/var/lib/mysql
+
+if [ ! -d "$DATADIR/mysql" ]; then
+    echo "[*] db: initialising data directory..."
+    mariadb-install-db --user=mysql --datadir="$DATADIR" --auth-root-authentication-method=normal >/dev/null
+fi
+
+echo "[*] db: starting mariadbd..."
+mariadbd --user=mysql --bind-address=0.0.0.0 &
+DB_PID=$!
+
+# Wait for the server to accept connections over the local socket.
+echo "[*] db: waiting for server..."
+for i in $(seq 1 30); do
+    if mariadb-admin ping >/dev/null 2>&1; then
+        break
+    fi
+    sleep 1
+done
+
+echo "[*] db: importing seed..."
+mariadb < /seed.sql
+
+echo "[*] db: ready (portal database seeded)."
+# Keep the container alive on the server process.
+wait "$DB_PID"
