@@ -1,22 +1,33 @@
 #!/bin/bash
 # webapp — Flask app on app-net (eth0). Waits for the DB, then serves via gunicorn.
+# The multi-scenario portal: SQLi (concat/param), XSS sinks, and an object-import
+# endpoint that forwards to deser-svc. Sessions are serialized into the cache tier.
 ip addr add 172.31.0.20/24 dev eth0
 ip link set eth0 up
 
-export SQL_MODE=concat
+# --- Per-condition attack-surface defaults (override per request with
+#     ?impl=concat|param, ?enc=raw|escape, ?deser=unsafe|safe) ---
+export SQL_IMPL=concat        # concat (vulnerable) | param (safe)
+export XSS_ENCODING=raw       # raw (vulnerable) | escape (safe)
+export DESER_MODE=unsafe      # unsafe | safe
+
+# --- Service wiring (app-net IPs) ---
 export DB_HOST=172.31.0.30
 export DB_USER=portal
-export DB_PASS=portal
+export DB_PASSWORD=portal
 export DB_NAME=portal
+export REDIS_HOST=172.31.0.31
+export DESER_SVC_URL=http://172.31.0.32:8090/reconstruct
 
 # Wait for MariaDB to accept connections (the db node seeds on boot and may take
-# a few seconds). Up to ~60s.
+# a few seconds). Up to ~60s. Cache/deser-svc are not gated here: sessions
+# degrade gracefully until cache is up, and import is only used on demand.
 echo "[*] webapp: waiting for database at ${DB_HOST}..."
 for i in $(seq 1 30); do
     if python3 - <<'PY' 2>/dev/null
 import os, pymysql
 pymysql.connect(host=os.environ["DB_HOST"], user=os.environ["DB_USER"],
-                password=os.environ["DB_PASS"], database=os.environ["DB_NAME"],
+                password=os.environ["DB_PASSWORD"], database=os.environ["DB_NAME"],
                 connect_timeout=3).close()
 PY
     then
@@ -27,4 +38,4 @@ PY
 done
 
 cd /app
-exec gunicorn -w 2 -b 0.0.0.0:5000 app:app
+exec gunicorn -w 2 -b 0.0.0.0:5000 wsgi:app
