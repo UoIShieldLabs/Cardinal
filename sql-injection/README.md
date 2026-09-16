@@ -15,31 +15,37 @@ topology (WAF, IDS, XSS/deser sinks, firewall/router) is deferred to later phase
 
 ## Topology
 
-Two collision domains; only `proxy` bridges them, so it is the sole path from
+Two collision domains; only `proxy` sits on both, so it is the sole path from
 the external tier to the application — the choke point is enforced by topology.
 
 ```
-        [Host browser :8089]
-               │
+   [Host browser]  ──(./expose-ui.sh, via Docker bridge)──▶  proxy :8080 (portal) · locust :8089
+
    ===== edgenet (172.30.0.0/24) =====
       │         │          │         │
    locust    attacker    proxy    monitor
     .20        .30        .10       .99
-                           │         │
-   ===== appnet (172.31.0.0/24) =====
+                           │         │       proxy & monitor span both domains;
+   ===== appnet (172.31.0.0/24) =====        proxy is the only edge→app path
                  │         │         │
               webapp      db      monitor
                .20        .30       .99
 ```
 
-| Node     | edgenet     | appnet      | Role                              |
-|----------|-------------|-------------|-----------------------------------|
-| proxy    | 172.30.0.10 | 172.31.0.10 | nginx reverse proxy (choke point) |
-| locust   | 172.30.0.20 | —           | benign traffic (web UI :8089)     |
-| attacker | 172.30.0.30 | —           | sqlmap / curl                     |
-| webapp   | —           | 172.31.0.20 | Flask app (gunicorn :5000)        |
-| db       | —           | 172.31.0.30 | MariaDB (seeded `portal` DB)      |
-| monitor  | 172.30.0.99 | 172.31.0.99 | passive tcpdump/tshark capture    |
+| Node     | edgenet     | appnet      | bridge¹ | Role                              |
+|----------|-------------|-------------|---------|-----------------------------------|
+| proxy    | 172.30.0.10 | 172.31.0.10 | yes     | nginx reverse proxy (choke point) |
+| locust   | 172.30.0.20 | —           | yes     | benign traffic (web UI :8089)     |
+| attacker | 172.30.0.30 | —           | —       | sqlmap / curl                     |
+| webapp   | —           | 172.31.0.20 | —       | Flask app (gunicorn :5000)        |
+| db       | —           | 172.31.0.30 | —       | MariaDB (seeded `portal` DB)      |
+| monitor  | 172.30.0.99 | 172.31.0.99 | —       | passive tcpdump/tshark capture    |
+
+¹ `proxy[bridged]` / `locust[bridged]` in `lab.conf` give these two an extra NIC on
+the Docker **default bridge** (a Docker-assigned `172.17.x` address, not shown). It
+carries only host-side UI access via `./expose-ui.sh`; it does **not** bridge the two
+collision domains and does not weaken the choke point (`webapp`/`db` stay
+single-homed on app-net, unreachable from the edge).
 
 ## Prerequisites
 
@@ -51,9 +57,9 @@ the external tier to the application — the choke point is enforced by topology
 
 ```bash
 cd sql-injection
-./build-images.sh      # build the 6 cardinal/* images (once, or after image changes)
-kathara lstart         # boot all 6 nodes (~30s; db seeds on first boot)
-./expose-ui.sh         # publish portal -> :8080 and Locust UI -> :8089 (Docker Desktop)
+./build-images.sh              # build the 6 cardinal/* images (once, or after image changes)
+kathara lstart --noterminals   # boot all 6 nodes (~30s; db seeds on first boot)
+./expose-ui.sh                 # publish portal -> :8080 and Locust UI -> :8089 (Docker Desktop)
 ```
 
 ### Use it
@@ -96,7 +102,7 @@ kathara lclean          # tear down; next lstart re-seeds a clean DB
 ### Extract pcaps (while running)
 
 ```bash
-docker cp $(kathara list | grep monitor | awk '{print $NF}'):/captures/ ./pcaps/
+docker cp "$(docker ps --format '{{.Names}}' | grep _monitor_)":/captures ./pcaps
 ```
 
 ## Notes & gotchas
@@ -126,7 +132,7 @@ docker cp $(kathara list | grep monitor | awk '{print $NF}'):/captures/ ./pcaps/
 sql-injection/
 ├── lab.conf / lab.dep          # Kathara topology + boot order
 ├── build-images.sh             # builds cardinal/{proxy,webapp,db,locust,attacker,monitor}
-├── expose-ui.sh                # publishes the Locust UI to the host (socat sidecar)
+├── expose-ui.sh                # publishes portal (:8080) + Locust UI (:8089) to the host
 ├── *.startup                   # per-node boot scripts (IPs + service launch)
 ├── images/*/Dockerfile         # custom image definitions
 ├── proxy/etc/nginx/nginx.conf  # reverse proxy → webapp:5000
