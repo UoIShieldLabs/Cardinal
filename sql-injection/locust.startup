@@ -1,0 +1,14 @@
+#!/bin/bash
+# locust — benign traffic generator on edge-net (eth0). Web UI on :8089
+# (published to the host by lab.conf: locust[port]="8089:8089").
+ip addr add 172.30.0.20/24 dev eth0
+ip link set eth0 up
+
+# The locust machine directory is mounted into /, so locustfile.py lands at
+# /locustfile.py. --host is the proxy (edge-net), so benign traffic enters
+# through the same choke point the attacker uses. Bind the UI to all interfaces
+# so the host can reach it via the published port.
+exec locust -f /locustfile.py \
+    --host=http://172.30.0.10 \
+    --web-host=0.0.0.0 \
+    --web-port=8089
