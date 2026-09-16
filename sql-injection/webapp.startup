@@ -1,0 +1,30 @@
+#!/bin/bash
+# webapp — Flask app on app-net (eth0). Waits for the DB, then serves via gunicorn.
+ip addr add 172.31.0.20/24 dev eth0
+ip link set eth0 up
+
+export SQL_MODE=concat
+export DB_HOST=172.31.0.30
+export DB_USER=portal
+export DB_PASS=portal
+export DB_NAME=portal
+
+# Wait for MariaDB to accept connections (the db node seeds on boot and may take
+# a few seconds). Up to ~60s.
+echo "[*] webapp: waiting for database at ${DB_HOST}..."
+for i in $(seq 1 30); do
+    if python3 - <<'PY' 2>/dev/null
+import os, pymysql
+pymysql.connect(host=os.environ["DB_HOST"], user=os.environ["DB_USER"],
+                password=os.environ["DB_PASS"], database=os.environ["DB_NAME"],
+                connect_timeout=3).close()
+PY
+    then
+        echo "[*] webapp: database is ready."
+        break
+    fi
+    sleep 2
+done
+
+cd /app
+exec gunicorn -w 2 -b 0.0.0.0:5000 app:app
