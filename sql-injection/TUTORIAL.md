@@ -37,7 +37,7 @@ cd sql-injection
 ## 2. Start the lab and publish the web UIs
 
 ```bash
-kathara lstart             # boots all 6 nodes (~30s; the DB seeds itself on boot)
+kathara lstart --noterminals   # boots all 6 nodes (~30s; the DB seeds itself on boot)
 ./expose-ui.sh             # publishes portal -> http://localhost:8080, Locust -> http://localhost:8089
 ```
 
