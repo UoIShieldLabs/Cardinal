@@ -14,6 +14,12 @@ docker build -t cardinal/webapp images/webapp/
 echo "[*] Building cardinal/db..."
 docker build -t cardinal/db images/db/
 
+echo "[*] Building cardinal/cache..."
+docker build -t cardinal/cache images/cache/
+
+echo "[*] Building cardinal/desersvc..."
+docker build -t cardinal/desersvc images/desersvc/
+
 echo "[*] Building cardinal/locust..."
 docker build -t cardinal/locust images/locust/
 

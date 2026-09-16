@@ -4,9 +4,13 @@ A step-by-step walkthrough of the SQL-injection lab: start it, browse the portal
 generate benign traffic, run the attacks (automated **and** by hand in your
 browser), and find the captured evidence.
 
-- **What's in scope:** SQL injection only (login + directory search), with a
-  benign twin on every route. XSS and insecure-deserialization are **later
-  phases** and are not wired up here.
+- **What's in scope:** this tutorial walks the **SQL injection** flows (login +
+  directory search), with a benign twin on every route. The webapp also exposes
+  the **XSS** sinks (reflected on `/search`, stored on `/profile` and
+  `/records/<id>`) and the **insecure-deserialization** import (`/settings`,
+  forwarded to `desersvc`) — see the README's "XSS and deserialization surfaces"
+  for how to exercise those. Dedicated XSS/deser *attacker tooling* (XSStrike,
+  ysoserial/pickle) is a later-phase add; the WAF and IDS stack remain deferred.
 - **Credentials:** `alice` / `alicepw`, `bob` / `bobpw`, `carol` / `carolpw`.
 - **Default mode is vulnerable** (`SQL_MODE=concat`); add `?impl=param` to any
   request to run the safe (parameterized) path instead.
