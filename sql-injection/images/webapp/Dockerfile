@@ -8,7 +8,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends iproute2 curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir flask==3.0.3 PyMySQL==1.1.1 gunicorn==23.0.0
+RUN pip install --no-cache-dir flask==3.0.3 PyMySQL==1.1.1 gunicorn==23.0.0 \
+    redis==5.0.8 requests==2.32.3
 
 # Kathara runs each machine's .startup script itself. Neutralize the base
 # image's entrypoint/command so it does NOT launch a competing service as PID 1

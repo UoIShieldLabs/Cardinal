@@ -15,8 +15,15 @@ if [ ! -d "$DATADIR/mysql" ]; then
     mariadb-install-db --user=mysql --datadir="$DATADIR" --auth-root-authentication-method=normal >/dev/null
 fi
 
-echo "[*] db: starting mariadbd..."
-mariadbd --user=mysql --bind-address=0.0.0.0 &
+# The general query log is the SQLi "structural cut": every statement AS THE
+# DATABASE RECEIVED IT. It goes to the Kathara shared dir (/shared is mounted
+# into every node, host-backed) so the passive monitor can read it without
+# opening a connection to the DB. mysqld must be able to write there.
+mkdir -p /shared && chmod 777 /shared
+
+echo "[*] db: starting mariadbd (general query log -> /shared/db_query.log)..."
+mariadbd --user=mysql --bind-address=0.0.0.0 \
+    --general-log=1 --general-log-file=/shared/db_query.log --log-output=FILE &
 DB_PID=$!
 
 # Wait for the server to accept connections over the local socket.

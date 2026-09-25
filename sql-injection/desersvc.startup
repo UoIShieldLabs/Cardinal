@@ -1,0 +1,8 @@
+#!/bin/bash
+# desersvc — object-reconstruction service on app-net (eth0), port 8090.
+# The webapp forwards untrusted serialized objects here for rebuilding.
+ip addr add 172.31.0.32/24 dev eth0
+ip link set eth0 up
+
+# The machine directory mounts at /, so svc.py lands at /svc.py.
+exec gunicorn -w 2 -b 0.0.0.0:8090 --chdir / svc:app

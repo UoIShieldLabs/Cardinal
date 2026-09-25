@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block crumbs %}<b>Welcome</b>{% endblock %}
+{% block body %}
+<div class="card" style="background:linear-gradient(135deg,#3b5bdb,#5c7cfa);color:#fff;border:0">
+  <h1 style="color:#fff">Cardinal Staff Portal</h1>
+  <p style="color:#dbe4ff;max-width:560px">The internal directory, profiles, and settings
+     for staff. Sign in to browse colleagues, manage your profile, comment on records,
+     and import your saved settings.</p>
+  <a class="btn ghost" href="/login">Sign in →</a>
+</div>
+
+<div class="grid cols-3">
+  <div class="card"><h3>👥 Directory</h3><p class="muted">Search and browse the staff directory with titles, departments, and contact info.</p></div>
+  <div class="card"><h3>📝 Records &amp; comments</h3><p class="muted">Open a person's record and leave comments visible to the team.</p></div>
+  <div class="card"><h3>⚙️ Settings</h3><p class="muted">Export and import your saved portal settings between sessions.</p></div>
+</div>
+
+<p class="muted" style="font-size:12.5px">Cardinal system-under-test · attack-surface
+   behaviour is request-toggled, see <a href="/state">/state</a>.</p>
+{% endblock %}

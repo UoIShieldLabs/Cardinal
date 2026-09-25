@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{% if record %}{{ record.name }}{% else %}Record{% endif %} — Cardinal{% endblock %}
+{% block crumbs %}<a href="/search">Directory</a> / <b>{% if record %}{{ enc(record.name, 'html') }}{% else %}Not found{% endif %}</b>{% endblock %}
+{% block body %}
+{% if not record %}
+  <div class="card"><div class="empty">Record not found.</div></div>
+{% else %}
+<div class="card">
+  <div class="person" style="gap:16px">
+    <span class="avatar lg" style="background: {{ avatar_color(record.name) }}">{{ enc(initials(record.name), 'html') }}</span>
+    <div>
+      <h1 style="margin:0">{{ enc(record.name, 'html') }}</h1>
+      <p class="muted" style="margin:2px 0">{{ enc(record.title, 'html') }} · <span class="pill gray">{{ enc(record.department, 'html') }}</span></p>
+      <div class="tb-banner">
+        <span class="chip">✉ {{ enc(record.email, 'html') }}</span>
+        <span class="chip">☎ {{ enc(record.phone, 'html') }}</span>
+        <span class="chip">📍 {{ enc(record.location, 'html') }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-hd"><h2>Comments</h2><span class="pill">{{ comments|length }}</span></div>
+  {% for c in comments %}
+    <!-- Stored-XSS sink: comment body rendered to every viewer, in HTML-body
+         and attribute contexts. -->
+    <div class="comment" title="by {{ enc(c.author, 'attr') }}">
+      <span class="avatar sm" style="background: {{ avatar_color(c.author) }}">{{ enc(initials(c.author), 'html') }}</span>
+      <div class="body">
+        <div><strong>{{ enc(c.author, 'html') }}</strong>
+             <span class="muted" style="font-size:12px">{{ c.created_at }}</span></div>
+        <div>{{ enc(c.body, 'html') }}</div>
+      </div>
+    </div>
+  {% else %}
+    <div class="empty">No comments yet. Be the first.</div>
+  {% endfor %}
+
+  <form method="post" style="margin-top:16px">
+    <div class="field"><textarea name="body" rows="3" placeholder="Add a comment…"></textarea></div>
+    <button class="btn" type="submit">Post comment</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

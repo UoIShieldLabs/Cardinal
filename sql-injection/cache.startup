@@ -1,0 +1,8 @@
+#!/bin/bash
+# cache — Redis on app-net (eth0). Stores the webapp's serialized session blobs.
+ip addr add 172.31.0.31/24 dev eth0
+ip link set eth0 up
+
+# Bind to all interfaces (app-net only reaches it); protected-mode off since the
+# lab network is the isolation boundary. Run in the foreground to keep the node.
+exec redis-server --bind 0.0.0.0 --protected-mode no

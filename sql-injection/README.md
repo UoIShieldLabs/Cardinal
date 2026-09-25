@@ -5,9 +5,18 @@ injection scenario: a vulnerable staff-portal webapp behind an nginx choke
 point, a seeded MariaDB, a Locust benign-traffic generator, and an attacker node
 with sqlmap — all observed by a passive monitor.
 
-This is the trimmed Phase-1 slice of the larger Cardinal testbed design (SQLi +
-XSS + insecure-deserialization under live benign traffic). The full segmented
-topology (WAF, IDS, XSS/deser sinks, firewall/router) is deferred to later phases.
+The webapp is the single system-under-test for **all three** Cardinal scenarios
+(the document mandates one environment for SQLi + XSS + insecure-deserialization
+under the same live benign traffic). It exposes: the concatenated/parameterized
+SQL paths, XSS sinks in every context (HTML body, attribute, JS, URI), and an
+object-import endpoint that forwards to `desersvc`. Sessions are serialized into
+the `cache` (Redis) tier. Each surface is toggleable per request (`?impl`,
+`?enc`, `?deser`) so an attack and its byte-identical benign twin share a route.
+
+Still deferred to later phases: the WAF (ModSecurity/CRS on the proxy), the IDS
+stack (Zeek/Suricata/Snort on the monitor), and the full three-tier segmentation
+(separate data-net, perimeter/core firewalls). Phase-1 attacker tooling covers
+SQLi (sqlmap); XSS/deser attacker tooling is a later-phase add.
 
 > **New here? See [`TUTORIAL.md`](TUTORIAL.md)** for a full walkthrough — start it,
 > browse the portal, run the attacks (automated *and* by hand in the browser),
@@ -27,9 +36,9 @@ the external tier to the application — the choke point is enforced by topology
     .20        .30        .10       .99
                            │         │       proxy & monitor span both domains;
    ===== appnet (172.31.0.0/24) =====        proxy is the only edge→app path
-                 │         │         │
-              webapp      db      monitor
-               .20        .30       .99
+           │      │      │      │      │
+        webapp   db   cache desersvc monitor
+          .20   .30    .31    .32     .99
 ```
 
 | Node     | edgenet     | appnet      | bridge¹ | Role                              |
@@ -39,6 +48,8 @@ the external tier to the application — the choke point is enforced by topology
 | attacker | 172.30.0.30 | —           | —       | sqlmap / curl                     |
 | webapp   | —           | 172.31.0.20 | —       | Flask app (gunicorn :5000)        |
 | db       | —           | 172.31.0.30 | —       | MariaDB (seeded `portal` DB)      |
+| cache    | —           | 172.31.0.31 | —       | Redis (serialized sessions)       |
+| desersvc | —           | 172.31.0.32 | —       | object-reconstruction svc (:8090) |
 | monitor  | 172.30.0.99 | 172.31.0.99 | —       | passive tcpdump/tshark capture    |
 
 ¹ `proxy[bridged]` / `locust[bridged]` in `lab.conf` give these two an extra NIC on
@@ -70,8 +81,10 @@ kathara lstart --noterminals   # boot all 6 nodes (~30s; db seeds on first boot)
 1. **Benign traffic** — open <http://localhost:8089> (Locust UI). Set ~10 users,
    spawn rate 2, Start. Requests should succeed with no failures.
 2. **Watch traffic** — `kathara connect monitor`, then `tail -f /captures/http_live.log`
-   for a live HTTP view of both segments. Full pcaps are written to `/captures/`
-   (`edge-net_*.pcap`, `app-net_*.pcap`).
+   for a live HTTP view of both segments (SQL statements are interleaved in,
+   tagged `[DBQUERY]`). Full pcaps are written to `/captures/`
+   (`edge-net_*.pcap`, `app-net_*.pcap`), and the **DB query log** (the structural
+   cut — every statement as the database received it) to `/captures/db_query.log`.
 3. **Attack** — in another terminal:
    ```bash
    kathara connect attacker
@@ -92,6 +105,32 @@ curl -G http://172.30.0.10/search --data-urlencode "q=Alice&impl=param"  # safe 
 The webapp defaults to the vulnerable **concat** path (`SQL_MODE=concat`). Any
 request can flip to the safe path per-request with `?impl=param`, so an attack
 and its benign twin traverse the identical route — only the parse tree differs.
+
+### XSS and deserialization surfaces (same webapp)
+
+```bash
+# XSS — the SAME payload is inert in one context and executes in another.
+#   raw (vulnerable) breaks out of the attribute; escape (safe) neutralises it:
+curl -G http://172.30.0.10/search --data-urlencode 'q="><script>alert(1)</script>' --data-urlencode 'enc=raw'
+curl -G http://172.30.0.10/search --data-urlencode 'q="><script>alert(1)</script>' --data-urlencode 'enc=escape'
+# Sinks are rendered on /search (reflected) and /profile, /records/<id> (stored),
+# across HTML-body / attribute / JS / URI contexts.
+
+# Insecure deserialization — the webapp forwards the object to desersvc:
+#   export a benign blob, re-import it; a crafted pickle would execute on rebuild.
+#   (?deser=unsafe reconstructs arbitrary objects; ?deser=safe accepts JSON only.)
+# Easiest via the JSON API:
+TOKEN=$(curl -s -X POST http://172.30.0.10/api/login -H 'Content-Type: application/json' \
+  -d '{"username":"alice","password":"alicepw"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["token"])')
+BLOB=$(curl -s http://172.30.0.10/api/settings/export -H "Authorization: Bearer $TOKEN" \
+  | python3 -c 'import sys,json;print(json.load(sys.stdin)["blob"])')
+curl -s -X POST 'http://172.30.0.10/api/settings/import?deser=unsafe' \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d "{\"blob\":\"$BLOB\"}"
+```
+
+A parallel **JSON API** mirrors every route under `/api/*` (bearer-token auth
+from `/api/login`) for scripted traffic and attacks. See `webapp/README.md` for
+the full route/toggle reference.
 
 ### Stop / reset
 
@@ -131,14 +170,19 @@ docker cp "$(docker ps --format '{{.Names}}' | grep _monitor_)":/captures ./pcap
 ```
 sql-injection/
 ├── lab.conf / lab.dep          # Kathara topology + boot order
-├── build-images.sh             # builds cardinal/{proxy,webapp,db,locust,attacker,monitor}
+├── build-images.sh             # builds cardinal/{proxy,webapp,db,cache,desersvc,locust,attacker,monitor}
 ├── expose-ui.sh                # publishes portal (:8080) + Locust UI (:8089) to the host
 ├── *.startup                   # per-node boot scripts (IPs + service launch)
 ├── images/*/Dockerfile         # custom image definitions
 ├── proxy/etc/nginx/nginx.conf  # reverse proxy → webapp:5000
-├── webapp/app/                 # Flask app (app.py + templates) — mounted at /app
+├── webapp/app/                 # Flask app: wsgi.py + portal/ package (routes,
+│                               #   templates, static) — mounted at /app
 ├── db/seed.sql                 # schema + seed (+ portal user) — mounted at /seed.sql
+├── cache/                      # Redis node (no mounted files)
+├── desersvc/svc.py             # object-reconstruction service — mounted at /svc.py
 ├── locust/locustfile.py        # benign employee workload
 ├── attacker/scripts/           # run_sqli.sh, manual_payloads.sh
-└── monitor/scripts/capture.sh  # tcpdump pcaps + live tshark
+├── monitor/scripts/capture.sh  # tcpdump pcaps + live tshark + DB query-log ingest
+└── shared/                     # Kathara shared dir (/shared on every node);
+                                #   db writes db_query.log here, monitor reads it
 ```
