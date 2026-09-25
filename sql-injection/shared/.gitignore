@@ -1,0 +1,2 @@
+# Runtime artifacts written into the Kathara shared dir; keep the dir, not the logs.
+*.log

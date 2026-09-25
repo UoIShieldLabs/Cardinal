@@ -67,9 +67,25 @@ query log (a current gap — see the milestone audit).
 - **Single-statement driver** (PyMySQL) blocks stacked queries.
 - **Hidden DB errors** defeat error-based *extraction* (UNION/blind still work).
 
+## The structural cut is now captured (DB query log)
+The `db` node logs every statement it receives to `/shared/db_query.log`, which
+the passive `monitor` ingests into `/captures/db_query.log` (tagged `[DBQUERY]`).
+This makes the section-4 argument concrete — the same three evasion payloads, as
+the database received them:
+
+```
+... WHERE name LIKE '%zzz' UNION/**/SELECT ...FROM users-- -%' ...
+... WHERE name LIKE '%zzz' uNiOn sElEcT ...FROM users-- -%' ...
+... WHERE name LIKE '%zzz' /*!50000UNION*/ /*!50000SELECT*/ ...FROM users-- -%' ...
+```
+
+Byte-different, but all three carry a `UNION` at the structural layer — a text
+filter misses two, a parser catches all three. And the concat vs param twin is
+visible here too: concat logs `'%x' OR '1'='1%'` (extra clause) while param logs
+`'%x\' OR \'1\'=\'1%'` (escaped literal — inert). This is the syntactic-cut
+signal the detector experiments consume.
+
 ## Suggested next steps
-- Add the **DB query log** to the monitor so section-4 evasions can be shown to
-  collapse to one structure at the parsed layer.
 - When the **WAF (ModSecurity/CRS)** lands, re-run section 4 to measure which
   evasions bypass CRS — a concrete signature-vs-structure comparison.
 - Extend blind extraction to the **time channel** (`--mode time`) for the case

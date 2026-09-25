@@ -20,7 +20,18 @@ EDGE_PID=$!
 tcpdump -i eth1 -w "$CAPTURE_DIR/app-net_${TIMESTAMP}.pcap" -U >/dev/null 2>&1 &
 APP_PID=$!
 
-trap "kill $EDGE_PID $APP_PID 2>/dev/null" EXIT
+# DB query log (the L1.5 structural cut): the db node writes every statement it
+# received to /shared/db_query.log. Mirror it into the capture set and interleave
+# it into the live view, tagged [DBQUERY], so you can watch each HTTP request
+# land as a SQL statement at the database — where the concat vs param difference
+# (and the injected clause) is plainly visible. Passive: we only read the file.
+( tail -F -n +1 /shared/db_query.log 2>/dev/null \
+    | stdbuf -oL grep --line-buffered -iE 'select|insert|update|delete|union|drop' \
+    | stdbuf -oL sed 's/^/[DBQUERY]  /' \
+    | tee -a "$CAPTURE_DIR/db_query.log" >> "$LIVE_LOG" ) &
+DBLOG_PID=$!
+
+trap "kill $EDGE_PID $APP_PID $DBLOG_PID 2>/dev/null" EXIT
 
 # Live structured HTTP view across both interfaces, line-buffered and tee'd to
 # the log file (and stdout, for `kathara connect` sessions that run this).

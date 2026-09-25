@@ -81,8 +81,10 @@ kathara lstart --noterminals   # boot all 6 nodes (~30s; db seeds on first boot)
 1. **Benign traffic** — open <http://localhost:8089> (Locust UI). Set ~10 users,
    spawn rate 2, Start. Requests should succeed with no failures.
 2. **Watch traffic** — `kathara connect monitor`, then `tail -f /captures/http_live.log`
-   for a live HTTP view of both segments. Full pcaps are written to `/captures/`
-   (`edge-net_*.pcap`, `app-net_*.pcap`).
+   for a live HTTP view of both segments (SQL statements are interleaved in,
+   tagged `[DBQUERY]`). Full pcaps are written to `/captures/`
+   (`edge-net_*.pcap`, `app-net_*.pcap`), and the **DB query log** (the structural
+   cut — every statement as the database received it) to `/captures/db_query.log`.
 3. **Attack** — in another terminal:
    ```bash
    kathara connect attacker
@@ -180,5 +182,7 @@ sql-injection/
 ├── desersvc/svc.py             # object-reconstruction service — mounted at /svc.py
 ├── locust/locustfile.py        # benign employee workload
 ├── attacker/scripts/           # run_sqli.sh, manual_payloads.sh
-└── monitor/scripts/capture.sh  # tcpdump pcaps + live tshark
+├── monitor/scripts/capture.sh  # tcpdump pcaps + live tshark + DB query-log ingest
+└── shared/                     # Kathara shared dir (/shared on every node);
+                                #   db writes db_query.log here, monitor reads it
 ```
