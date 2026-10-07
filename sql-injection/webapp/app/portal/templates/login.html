@@ -5,6 +5,7 @@
   <title>Sign in — Cardinal</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/app.css">
+  {% if sanitize_on %}<script src="/static/clientsan.js" defer></script>{% endif %}
 </head>
 <body>
 <div class="auth-wrap">
@@ -14,7 +15,7 @@
 
     {% if error %}<div class="flash err">{{ enc(error, 'html') }}</div>{% endif %}
 
-    <form method="post">
+    <form method="post" {% if sanitize_on %}data-san="regex"{% endif %}>
       <div class="field">
         <label>Username</label>
         <input name="username" placeholder="e.g. alice" autocomplete="off" autofocus>
@@ -28,7 +29,9 @@
 
     <p class="muted" style="font-size:12.5px;margin-bottom:0">
       Demo account <code>alice / alicepw</code>. SQL path:
-      <code>?impl=concat</code> (vulnerable) or <code>?impl=param</code> (safe).
+      <code>?impl=concat</code> (vulnerable) / <code>?impl=param</code> (safe).
+      Client-side sanitization (app-wide): <code>?sanitize=on</code> / <code>?sanitize=off</code>.
+      {% if sanitize_on %}<b style="color:#0b7a5b">SANITIZED — login uses a JS regex denylist</b>{% else %}<b style="color:#b00">VULNERABLE (no client-side filtering)</b>{% endif %}
     </p>
     {% if last_sql %}<pre style="margin-top:10px">{{ enc(last_sql, 'html') }}</pre>{% endif %}
   </div>

@@ -17,7 +17,7 @@
     <form method="post" action="/settings/import">
       <div class="field">
         <label>Settings blob (base64)</label>
-        <textarea name="blob" rows="4" placeholder="Paste an exported blob…"></textarea>
+        <textarea name="blob" rows="4" placeholder="Paste an exported blob…"{% if sanitize_on %} data-san="keystroke"{% endif %}></textarea>
       </div>
       <button class="btn" type="submit">Import settings</button>
     </form>
