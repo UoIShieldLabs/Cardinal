@@ -7,7 +7,8 @@
 
 <div class="card">
   <form method="get" style="display:flex;gap:10px;align-items:center">
-    <input name="q" value="{{ enc(term, 'attr') }}" placeholder="Search by name…" style="flex:1">
+    <input name="q" value="{{ enc(term, 'attr') }}" placeholder="Search by name…" style="flex:1"
+           {% if sanitize_on %}pattern="[A-Za-z0-9 ]*" maxlength="40" title="letters, digits and spaces only"{% endif %}>
     <button class="btn" type="submit">Search</button>
     {% if term %}<a class="btn ghost" href="/search">Clear</a>{% endif %}
   </form>

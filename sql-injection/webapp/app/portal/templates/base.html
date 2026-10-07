@@ -5,6 +5,7 @@
   <title>{% block title %}Cardinal Staff Portal{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/app.css">
+  {% if sanitize_on %}<script src="/static/clientsan.js" defer></script>{% endif %}
 </head>
 <body>
 <div class="shell">

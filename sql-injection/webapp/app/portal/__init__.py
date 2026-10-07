@@ -61,6 +61,16 @@ def create_app():
         g.session = sess.load_session(sid)
         # Per-request, toggle-aware contextual encoder.
         g.enc = make_enc(request.args)
+        # Global client-side-sanitization toggle. One app: ?sanitize=on turns on
+        # client-side defenses across EVERY form (login, search, profile,
+        # comments, settings); ?sanitize=off reverts to the vulnerable app. The
+        # choice persists in a cookie so it carries across navigation.
+        arg = request.args.get("sanitize")
+        if arg is not None:
+            g.sanitize_on = (arg == "on")
+            g.sanitize_set = arg  # remember to persist in after_request
+        else:
+            g.sanitize_on = request.cookies.get("sanitize") == "on"
 
     @app.context_processor
     def inject_helpers():
@@ -69,11 +79,15 @@ def create_app():
             "current_user": g.get("session", {}).get("user"),
             "initials": _initials,
             "avatar_color": _avatar_color,
+            "sanitize_on": g.get("sanitize_on", False),
         }
 
     @app.after_request
     def persist_session(resp):
-        # If a route created/destroyed a session it sets g.sid explicitly.
+        # Persist the sanitize toggle when it was set via ?sanitize=on|off.
+        if g.get("sanitize_set") is not None:
+            resp.set_cookie("sanitize", "on" if g.sanitize_on else "off",
+                            samesite="Lax")
         return resp
 
     return app

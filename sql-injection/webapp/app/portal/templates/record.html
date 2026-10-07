@@ -38,7 +38,7 @@
   {% endfor %}
 
   <form method="post" style="margin-top:16px">
-    <div class="field"><textarea name="body" rows="3" placeholder="Add a comment…"></textarea></div>
+    <div class="field"><textarea name="body" rows="3" placeholder="Add a comment…"{% if sanitize_on %} data-san="keystroke"{% endif %}></textarea></div>
     <button class="btn" type="submit">Post comment</button>
   </form>
 </div>

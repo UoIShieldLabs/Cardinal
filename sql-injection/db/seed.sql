@@ -75,3 +75,19 @@ INSERT INTO comments (record_id, author, body) VALUES
   (1, 'carol', 'Approved the new directory layout — looks much cleaner.'),
   (4, 'grace', 'David led the search-service migration. Solid work.'),
   (7, 'ivy',   'Grace ran a really tight roadmap review this quarter.');
+
+-- Tier 2 hole: a stored procedure that builds DYNAMIC SQL from its parameter.
+-- Apps assume "stored procedure == safe"; it is not when the body concatenates
+-- the parameter (CONCAT + PREPARE), so injection lands inside the procedure.
+DELIMITER $$
+CREATE PROCEDURE search_dir(IN term VARCHAR(256))
+BEGIN
+  SET @q = CONCAT(
+    'SELECT id,name,title,department,email,phone,location FROM directory ',
+    'WHERE name LIKE ''%', term, '%'' ORDER BY name LIMIT 50'
+  );
+  PREPARE stmt FROM @q;
+  EXECUTE stmt;
+  DEALLOCATE PREPARE stmt;
+END$$
+DELIMITER ;

@@ -10,13 +10,13 @@
     <div class="card-hd"><h2>Edit details</h2></div>
     <form method="post">
       <div class="field"><label>Display name</label>
-        <input name="display_name" value="{{ enc(profile.display_name, 'attr') }}"></div>
+        <input name="display_name" value="{{ enc(profile.display_name, 'attr') }}"{% if sanitize_on %} data-san="keystroke"{% endif %}></div>
       <div class="field"><label>Status</label>
-        <input name="status" value="{{ enc(profile.status, 'attr') }}" placeholder="e.g. available"></div>
+        <input name="status" value="{{ enc(profile.status, 'attr') }}" placeholder="e.g. available"{% if sanitize_on %} data-san="keystroke"{% endif %}></div>
       <div class="field"><label>Homepage</label>
-        <input name="homepage" value="{{ enc(profile.homepage, 'attr') }}" placeholder="https://…"></div>
+        <input name="homepage" value="{{ enc(profile.homepage, 'attr') }}" placeholder="https://…"{% if sanitize_on %} data-san="keystroke"{% endif %}></div>
       <div class="field"><label>Bio</label>
-        <textarea name="bio" rows="4">{{ enc(profile.bio, 'html') }}</textarea></div>
+        <textarea name="bio" rows="4"{% if sanitize_on %} data-san="keystroke"{% endif %}>{{ enc(profile.bio, 'html') }}</textarea></div>
       <button class="btn" type="submit">Save changes</button>
     </form>
   </div>
