@@ -8,14 +8,34 @@ Toggles (all per request):
   ?id=<expr>                numeric-context filter (Tier 1 escape blind spot)
   ?sort=<col>               ORDER BY identifier, concatenated (Tier 2 param hole)
 """
-from flask import Blueprint, render_template, request
+from flask import Blueprint, g, redirect, render_template, request, url_for
 
 from ..config import Config, resolve
 from ..db import (get_conn, SEARCH_IMPLS, filter_directory_by_id,
-                  search_directory_param_sorted)
+                  search_directory_param_sorted, get_user_status,
+                  secondorder_lookup)
 from ..sanitize_server import purify_server
 
 bp = Blueprint("directory", __name__)
+
+
+@bp.route("/myteam")
+def myteam():
+    """Second-order demo: 'colleagues in my department', built from the current
+    user's STORED status. The status was saved via a parameterized profile
+    update (safe), but it is re-used here concatenated into the query (unsafe)."""
+    user = g.get("session", {}).get("user")
+    if not user:
+        return redirect(url_for("auth.login"))
+    conn = get_conn()
+    try:
+        status = get_user_status(conn, user["id"])     # safe parameterized read
+        results, executed_sql = secondorder_lookup(conn, status)  # unsafe re-use
+    finally:
+        conn.close()
+    return render_template("search.html", active_nav="directory", term="",
+                           results=results, impl="second-order",
+                           executed_sql=executed_sql)
 
 
 @bp.route("/search")
