@@ -56,6 +56,62 @@ def search_directory_param(conn, term: str):
         return cur.fetchall(), sql
 
 
+def search_directory_proc(conn, term: str):
+    """Tier 2 hole: a STORED PROCEDURE that builds dynamic SQL from its parameter.
+    The term is passed bound (looks safe) but the proc CONCATs it into the query,
+    so injection lands inside the procedure. 'We use stored procedures' != safe."""
+    with conn.cursor() as cur:
+        cur.callproc("search_dir", (term,))
+        return cur.fetchall(), "CALL search_dir(%s)  -- proc concatenates term into dynamic SQL"
+
+
+def get_user_status(conn, uid):
+    """SAFE parameterized read of a user's own stored status."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT status FROM users WHERE id = %s", (uid,))
+        row = cur.fetchone()
+    return (row or {}).get("status") or ""
+
+
+def secondorder_lookup(conn, status: str):
+    """SECOND-ORDER sink. The status was STORED earlier via a parameterized query
+    (safe at entry), but here it is read back and CONCATENATED into a new query
+    (unsafe at use). Input-time parameterization does not help -- the injection
+    is re-introduced from storage."""
+    sql = (
+        "SELECT " + _DIR_COLS + " FROM directory "
+        "WHERE department LIKE '%" + status + "%' ORDER BY name LIMIT 50"
+    )
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return cur.fetchall(), sql
+
+
+def filter_directory_by_id(conn, id_expr: str):
+    """Tier 1 numeric-context: id is concatenated WITHOUT quotes, so a
+    quote-escaping sanitizer has nothing to escape."""
+    sql = (
+        "SELECT " + _DIR_COLS + " FROM directory "
+        "WHERE id = " + id_expr + " ORDER BY name LIMIT 50"
+    )
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return cur.fetchall(), sql
+
+
+def search_directory_param_sorted(conn, term: str, sort: str):
+    """Tier 2 hole: the VALUE is parameterized (safe), but the ORDER BY column is
+    an IDENTIFIER, which cannot be parameterized, so it is concatenated. Injection
+    returns through the sort parameter despite 'using prepared statements'."""
+    sql = (
+        "SELECT " + _DIR_COLS + " FROM directory "
+        "WHERE name LIKE %s ORDER BY " + sort + " LIMIT 50"
+    )
+    with conn.cursor() as cur:
+        cur.execute(sql, ("%" + term + "%",))
+        return cur.fetchall(), sql
+
+
 # --- Login ------------------------------------------------------------------
 # The login route also reaches the DB and shares the same two-path design.
 
@@ -82,5 +138,9 @@ def login_param(conn, username: str, password: str):
 
 
 # Dispatch helpers keyed by the resolved SQL_IMPL toggle.
-SEARCH_IMPLS = {"concat": search_directory_concat, "param": search_directory_param}
+SEARCH_IMPLS = {
+    "concat": search_directory_concat,
+    "param": search_directory_param,
+    "proc": search_directory_proc,
+}
 LOGIN_IMPLS = {"concat": login_concat, "param": login_param}
