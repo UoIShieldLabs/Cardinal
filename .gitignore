@@ -8,6 +8,3 @@ sql-injection/docs/*.pdf
 
 # sqlmap attack output (dumps, session db, logs) — never tracked
 sqlmap-output/
-
-kanban/dist/
-kanban/__pycache__/

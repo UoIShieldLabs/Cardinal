@@ -4,11 +4,18 @@ Create, edit, move, and delete tasks in a local browser. Each task lives in a Ma
 
 ## Start the board
 
-Run this command from the repository root with Python 3.9 or newer. No packages are required.
+With Python 3.9 or newer, run these commands from the repository root.
 
 ```sh
-python3 kanban/board.py serve
+cd kanban
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+python board.py serve
 ```
+
+On Windows PowerShell, use `py -3 -m venv .venv` and activate with `.venv\Scripts\Activate.ps1` instead.
 
 Open <http://127.0.0.1:8765>. Use **New task** or a column's **+** button to create a task. Click a task title to edit all its fields.
 
@@ -16,7 +23,7 @@ Drag a task to another column or use its status menu. The status menu also works
 
 Changes save to Markdown immediately. Reload the page to pick up changes made in a text editor or another tab. Commit the task files to share them through Git. The server does not commit or push.
 
-To use another port, run `python3 kanban/board.py serve --port 8766`. Stop the server with Ctrl+C.
+To use another port, run `python board.py serve --port 8766` from `kanban/`. Stop the server with Ctrl+C.
 
 ## Edit task files
 
@@ -64,8 +71,8 @@ The published board shows task details with editing controls hidden. It has no w
 To preview the same read-only artifact locally, run these commands in order.
 
 ```sh
-python3 kanban/board.py build --output kanban/dist
-python3 -m http.server 8766 --bind 127.0.0.1 --directory kanban/dist
+python board.py build --output dist
+python -m http.server 8766 --bind 127.0.0.1 --directory dist
 ```
 
 Open <http://127.0.0.1:8766>. The generated directory contains only the board assets and task snapshot. It is ignored by Git. The build refuses output directories containing unrelated files.
@@ -73,7 +80,7 @@ Open <http://127.0.0.1:8766>. The generated directory contains only the board as
 ## Run the checks
 
 ```sh
-python3 -m unittest discover -s kanban -p 'test_*.py' -v
+python -m unittest discover -s . -p 'test_*.py' -v
 ```
 
 The tests use temporary task directories. They exercise Markdown persistence, local HTTP operations, invalid input, file boundaries, and read-only export.

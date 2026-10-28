@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cardinal-board"
+version = "0.1.0"
+description = "A repository-backed Markdown Kanban board for Cardinal."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/UoIShieldLabs/Cardinal"
+
+[tool.setuptools]
+py-modules = ["board"]
+include-package-data = false
