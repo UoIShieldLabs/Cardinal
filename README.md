@@ -2,6 +2,12 @@
 
 Each lab is self-contained in its own directory with its own README and setup.
 
+## Project board
+
+Run `python3 kanban/board.py serve` and open <http://127.0.0.1:8765> to manage
+tasks in three columns. Tasks save as Markdown under `kanban/tasks/`.
+See [the board guide](kanban/README.md) for setup and read-only GitHub Pages publishing.
+
 ## Labs
 
 ### [`sql-injection/`](sql-injection/) — web-app attacks (Kathara)

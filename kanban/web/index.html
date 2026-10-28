@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="The Cardinal project board.">
+  <title>Cardinal | Project board</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Cardinal home"><span class="brand-mark" aria-hidden="true">C</span>Cardinal</a>
+    <span class="topbar-divider" aria-hidden="true">/</span>
+    <span class="workspace">Workspace</span>
+    <span id="mode" class="mode">Connecting</span>
+  </header>
+  <main>
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">CARDINAL / TASKS</p>
+        <h1>Project board</h1>
+        <p class="subtitle">A little structure for the work ahead.</p>
+      </div>
+      <button id="new-task" class="primary" type="button" hidden><span aria-hidden="true">+</span> New task</button>
+    </div>
+    <div class="toolbar">
+      <div class="board-tab"><span class="board-icon" aria-hidden="true">▥</span> Board <span id="total" class="count">0</span></div>
+      <label class="search"><span class="sr-only">Search tasks</span><input id="search" type="search" placeholder="Search tasks..." autocomplete="off"></label>
+    </div>
+    <p id="notice" class="notice" role="alert" hidden></p>
+    <p id="loading" role="status">Loading tasks...</p>
+    <div id="board" class="board" aria-label="Kanban board"></div>
+    <footer id="board-help" class="board-help"></footer>
+  </main>
+  <dialog id="task-dialog" aria-labelledby="dialog-title">
+    <form id="task-form">
+      <div class="dialog-heading">
+        <div><p class="eyebrow" id="task-id">CARDINAL / TASK</p><h2 id="dialog-title">New task</h2></div>
+        <button id="close-dialog" class="icon-button" type="button" aria-label="Close task">×</button>
+      </div>
+      <p id="readonly-help" class="field-help" hidden>This is a published snapshot. Edit tasks in the local board.</p>
+      <p id="form-error" class="notice" role="alert" hidden></p>
+      <label>Title <span class="required">*</span><input name="title" required placeholder="What needs to be done?" autofocus></label>
+      <label>Description<textarea name="description" rows="4" placeholder="Add context, notes, or links..."></textarea></label>
+      <div class="form-row">
+        <label>Status<select name="status"></select></label>
+        <label>Priority<select name="priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></label>
+        <label>Assignee<input name="assignee" placeholder="Unassigned"></label>
+      </div>
+      <label>Labels<input name="labels" placeholder="docs, research, bug"><span class="field-help">Separate labels with commas.</span></label>
+      <label>Acceptance criteria<textarea name="acceptanceCriteria" rows="4" placeholder="What must be true for this task to be done?"></textarea><span class="field-help">One criterion per line.</span></label>
+      <div class="dialog-footer">
+        <button id="delete-task" class="danger" type="button" hidden>Delete task</button>
+        <div class="dialog-actions"><button id="cancel-dialog" class="secondary" type="button">Cancel</button><button id="save-task" class="primary" type="submit">Create task</button></div>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
