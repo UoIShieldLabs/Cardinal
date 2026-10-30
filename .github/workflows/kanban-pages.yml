@@ -48,6 +48,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/configure-pages@v5
+        with:
+          # Auto-enable the Pages site (with the GitHub Actions build type) if it
+          # has not been enabled yet, instead of failing with "Get Pages site
+          # failed ... Not Found" on the initial GET.
+          enablement: true
       - name: Publish the board
         id: deployment
         uses: actions/deploy-pages@v4
