@@ -8,6 +8,8 @@
   {% if sanitize_on %}<script src="/static/clientsan.js" defer></script>{% endif %}
 </head>
 <body>
+<div class="page-flex">
+<div class="page-main">
 <div class="auth-wrap">
   <div class="auth-card">
     <div class="brand"><span class="logo">C</span> Cardinal Portal</div>
@@ -51,6 +53,9 @@
     <a class="btn" href="{{ url_for('core.dashboard') }}" style="width:100%;justify-content:center;margin-top:12px">Continue to dashboard →</a>
     {% endif %}
   </div>
+</div>
+</div>
+{% include "_insight_panel_login.html" %}
 </div>
 </body>
 </html>

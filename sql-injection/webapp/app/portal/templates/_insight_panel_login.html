@@ -1,0 +1,21 @@
+<aside class="insight-panel">
+  <div class="insight-hd">What happens?</div>
+
+  <div class="insight-step">
+    <div class="insight-label">1. Input received</div>
+    <pre class="insight-box">{% if request.form.get('username') %}username: {{ enc(request.form.get('username'), 'html') }}
+password: {{ enc(request.form.get('password'), 'html') }}{% else %}(nothing submitted yet){% endif %}</pre>
+  </div>
+
+  <div class="insight-step">
+    <div class="insight-label">2. SQL sent to the database</div>
+    <pre class="insight-box">{% if last_sql %}{{ enc(last_sql, 'html') }}{% else %}(no query executed yet){% endif %}</pre>
+  </div>
+
+  <div class="insight-step">
+    <div class="insight-label">3. Output returned</div>
+    <pre class="insight-box">{% if signed_in_as %}AUTHENTICATED
+signed in as: {{ enc(signed_in_as, 'html') }}{% elif error %}NOT AUTHENTICATED
+{{ enc(error, 'html') }}{% else %}(no attempt yet){% endif %}</pre>
+  </div>
+</aside>
