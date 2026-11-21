@@ -61,6 +61,15 @@ class EmployeeBehavior(SequentialTaskSet):
             name="/search?split=on&q=[half]&q=[half]",
         )
 
+    @task(1)
+    def teamsearch_benign(self):
+        term = random.choice(SEARCH_TERMS)
+        half = max(1, len(term) // 2)
+        self.client.get(
+            f"/teamsearch?q={term[:half]}&q={term[half:]}",
+            name="/teamsearch?q=[half]&q=[half]",
+        )    
+
 class BenignUser(HttpUser):
     tasks = [EmployeeBehavior]
     wait_time = between(1, 5)  # human-plausible pacing

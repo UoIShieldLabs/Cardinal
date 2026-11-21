@@ -155,9 +155,10 @@ script encodes every byte so even `UNION`/`SELECT` stay hidden, then adds
 
 ``` bash
   /scripts/run_fragmentation.sh # halves are caught by WAF, detection forces app to rejoin them and inject, RASP blocks it
+  /scripts/run_fragmentation_noflag.sh # no flag; a good split point bypasses teh WAF and injects, RASP serves as the only backstop
 ```
 
-HTTP Parameter Fragmentation (HPF) splits a single payload across duplicate 'q' parameters, each half is sent separately and with '?split=on' makes the app rejoin them through .join(getlist) creating the single injectable term.  Here the WAF, Coraza/CRS uses libinjection so each parameter value is tokenized seperatly, the fragments still contain recognizable SQL sections and is fingerprinted as SQLi (Find rule response 942100 in waf_audit.log), this is then blocked at :80. The duplicate param shape is not what the system catches, its the SQL content in the fragmentation that gets flagged.  Only on the detection port does the app rejoin the halves and inject, where finally RASP inspects the final query and 403s it.  HPF can beat regex/signature WAFs, but not tokenized systems, with RASP as a backstop in the end.  
+HTTP Parameter Fragmentation (HPF) splits a single payload across duplicate 'q' parameters, each half is sent separately and with '?split=on' makes the app rejoin them through .join(getlist) creating the single injectable term.  The WAF uses libinjection which tokenizes each p value separately so the outcome of it depends on where the payload is split. A naive split keeps one half as a full SQL fingerprint so libinjection can flag it, and :80 blocks the request. However a split where neither side is recognizable the request will pass :80 with an empty WAF log and only injects after the app reassembles it.  HPF can beat regex/signature WAF and a libinjection based one too because the injection only happens after the reassembly. 
 
 ### 4.3 Safe-path control
 
