@@ -137,3 +137,23 @@ def search():
         impl=impl,
         executed_sql=executed_sql,
     )
+
+@bp.route("/teamsearch")
+def teamsearch():
+    """Always-join HPF variant: duplicate ?q= values are ALWAYS concatenated --
+    no ?split toggle -- modelling an app that inherently rejoins polluted params.
+    The attack is just two q params; nothing in the request signals the rejoin."""
+    term = "".join(request.args.getlist("q"))
+    rasp_mode = resolve("RASP_MODE", request.args, Config.RASP_MODE)
+    results, executed_sql = [], None
+    conn = get_conn()
+    try:
+        if term:
+            results, executed_sql = SEARCH_IMPLS["concat"](conn, term, rasp_mode)
+    except RaspBlocked as blocked:
+        return _rasp_blocked_page(blocked.verdict)
+    finally:
+        conn.close()
+    return render_template("search.html", active_nav="directory",
+                        term=term, results=results, impl="teamsearch",
+                        executed_sql=executed_sql)
